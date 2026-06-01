@@ -1,0 +1,29 @@
+FROM ubuntu:24.04
+
+RUN DEBIAN_FRONTEND=noninteractive apt-get update \
+ && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+      build-essential ca-certificates ninja-build cmake llvm \
+      python3 python3-pip python3-venv \
+      git nodejs npm ripgrep jq curl \
+ && rm -rf /var/lib/apt/lists/*
+
+ARG USER_ID=10001
+ARG GROUP_ID=10001
+ARG USER_NAME=ai-agent
+ARG CLAUDE_CODE_VERSION=latest
+
+RUN userdel -r ubuntu 2>/dev/null || true \
+ && groupadd -g ${GROUP_ID} ${USER_NAME} \
+ && useradd  -m -u ${USER_ID} -g ${GROUP_ID} --shell /bin/bash ${USER_NAME} \
+ && mkdir -p /workspace /opt/claude-code \
+ && chown ${USER_ID}:${GROUP_ID} /workspace /opt/claude-code
+
+ENV NPM_CONFIG_PREFIX=/opt/claude-code
+ENV PATH=/opt/claude-code/bin:$PATH
+
+USER ${USER_NAME}
+WORKDIR /workspace
+
+RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}
+
+CMD ["bash"]
